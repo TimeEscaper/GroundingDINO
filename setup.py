@@ -66,19 +66,19 @@ torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
 
 
 def get_extensions():
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    extensions_dir = os.path.join(this_dir, "groundingdino", "models", "GroundingDINO", "csrc")
+    # REMOVED: this_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # FIX: Use a relative path string directly
+    extensions_dir = os.path.join("groundingdino", "models", "GroundingDINO", "csrc")
 
     main_source = os.path.join(extensions_dir, "vision.cpp")
-    sources = glob.glob(os.path.join(extensions_dir, "**", "*.cpp"))
-    source_cuda = glob.glob(os.path.join(extensions_dir, "**", "*.cu")) + glob.glob(
-        os.path.join(extensions_dir, "*.cu")
-    )
-
-    sources = [main_source] + sources
-
-    extension = CppExtension
-
+    sources = glob.glob(os.path.join(extensions_dir, "**", "*.cpp"), recursive=True)
+    
+    # Ensure source_cuda is also relative
+    source_cuda = glob.glob(os.path.join(extensions_dir, "**", "*.cu"), recursive=True) 
+    
+    extension = CUDAExtension
+    
     extra_compile_args = {"cxx": []}
     define_macros = []
 
