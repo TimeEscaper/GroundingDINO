@@ -64,25 +64,13 @@ requirements = ["torch", "torchvision"]
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
 
-
 def get_extensions():
-    # 1. Get the absolute path of the current directory (setup.py location)
     this_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # 2. Define the absolute path to the C++ extension sources
-    extensions_dir_abs = os.path.join(this_dir, "groundingdino", "models", "GroundingDINO", "csrc")
+    extensions_dir = os.path.join(this_dir, "groundingdino", "models", "GroundingDINO", "csrc")
 
-    # 3. Glob the files using ABSOLUTE paths (guarantees we find them)
-    sources = glob.glob(os.path.join(extensions_dir_abs, "**", "*.cpp"), recursive=True)
-    source_cuda = glob.glob(os.path.join(extensions_dir_abs, "**", "*.cu"), recursive=True)
-
-    # 4. Convert them to RELATIVE paths to satisfy setuptools/uv
-    #    (e.g., /home/user/GDINO/groundingdino/... -> groundingdino/...)
-    sources = [os.path.relpath(s, this_dir) for s in sources]
-    source_cuda = [os.path.relpath(s, this_dir) for s in source_cuda]
-    
-    # 5. Also make the include dir relative
-    extensions_dir_rel = os.path.relpath(extensions_dir_abs, this_dir)
+    main_source = os.path.join(extensions_dir, "vision.cpp")
+    sources = glob.glob(os.path.join(extensions_dir, "**", "*.cpp"), recursive=True)
+    source_cuda = glob.glob(os.path.join(extensions_dir, "**", "*.cu"), recursive=True)
 
     extension = CUDAExtension
 
@@ -90,9 +78,6 @@ def get_extensions():
     define_macros = []
 
     if (torch.cuda.is_available() and ((CUDA_HOME is not None) or is_rocm_pytorch)) or os.getenv("FORCE_CUDA", "0") == "1":
-        print("Compiling with CUDA")
-        extension = CUDAExtension
-        sources += source_cuda
         define_macros += [("WITH_CUDA", None)]
         extra_compile_args["nvcc"] = [
             "-DCUDA_HAS_FP16=1",
@@ -100,28 +85,34 @@ def get_extensions():
             "-D__CUDA_NO_HALF_CONVERSIONS__",
             "-D__CUDA_NO_HALF2_OPERATORS__",
         ]
+        sources += source_cuda
     else:
         print("Compiling without CUDA")
         define_macros += [("WITH_HIP", None)]
-        extra_compile_args["nvcc"] = []
-        return None
+        return []
 
-    # 6. Ensure 'sources' combines both lists
-    sources = sources + source_cuda
+    # --- THE FIX: Clean Paths & Remove Duplicates ---
+    # 1. Convert everything to relative paths (fixes the absolute path error)
+    sources = [os.path.relpath(s, this_dir) for s in sources]
     
-    # 7. Update the CUDAExtension call to use the RELATIVE include dir
+    # 2. Use set() to remove any accidental duplicates (fixes the ninja error)
+    sources = sorted(list(set(sources)))
+    
+    # 3. Define the include directory relative to this_dir
+    include_dirs = [os.path.relpath(extensions_dir, this_dir)]
+    # ------------------------------------------------
+
     ext_modules = [
         extension(
             "groundingdino._C",
             sources,
-            include_dirs=[extensions_dir_rel], # <--- Update this variable name
+            include_dirs=include_dirs,
             define_macros=define_macros,
             extra_compile_args=extra_compile_args,
         )
     ]
 
     return ext_modules
-
 
 def parse_requirements(fname="requirements.txt", with_version=True):
     """Parse the package dependencies listed in a requirements file but strips
