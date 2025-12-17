@@ -1,0 +1,36 @@
+[build-system]
+# This section ensures torch is installed in the isolated build env
+# before setup.py runs.
+requires = [
+    "setuptools",
+    "wheel",
+    "torch",
+    "ninja"  # Optional: speeds up C++ compilation
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "groundingdino"
+version = "0.1.0"
+description = "Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Shilong Liu", email = "liushilong03@gmail.com"}
+]
+dependencies = [
+    "torch",
+    "torchvision",
+    "transformers",
+    "addict",
+    "yapf",
+    "timm",
+    "numpy",
+    "opencv-python",
+    "supervision",
+    "pycocotools"
+]
+
+[project.urls]
+Repository = "https://github.com/TimeEscaper/GroundingDINO"
