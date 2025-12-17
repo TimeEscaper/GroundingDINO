@@ -1,21 +1,20 @@
 [build-system]
-# This section ensures torch is installed in the isolated build env
-# before setup.py runs.
 requires = [
-    "setuptools",
+    "setuptools>=61.0", # Newer setuptools
     "wheel",
     "torch",
-    "ninja"  # Optional: speeds up C++ compilation
+    "numpy",            # Added numpy (often needed by torch/extensions)
+    "ninja"
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "groundingdino"
 version = "0.1.0"
-description = "Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection"
+description = "Grounding DINO"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {file = "LICENSE"}
+license = {text = "Apache-2.0"}  # FIX: Changed from 'file' to 'text' to silence
 authors = [
     {name = "Shilong Liu", email = "liushilong03@gmail.com"}
 ]
